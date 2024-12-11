@@ -1,5 +1,5 @@
 //Created by Callum Watt
-//v0.2
+//v0.3
 
 #include <iostream>
 #include <stdio.h>      /* printf, scanf, puts, NULL */
@@ -10,10 +10,10 @@
 using namespace std;
 
 int upcard;
-int dealer = 0;
-int player = 0;
+int dealer;
+int player;
 int money = 100;
-int bet = 0;
+int bet;
 int cardGen;
 int card;
 int value;
@@ -26,6 +26,7 @@ int playerCardsDealt;
 int dealerCardsDealt;
 int option;
 int baltop;
+int baltopGames;
 bool inPlay = true;
 bool dealerLoop = true;
 bool draw;
@@ -37,10 +38,20 @@ string input;
 string confirm;
 string nexti;
 
+
+string userInput() {
+	system("CLS");
+	cout << "\n" << "Current value - " << player << "\n"
+		<< "Dealer upcard - " << dealer << "\n"
+		<< "Do you wish to draw? y/n or d for double:" << "\n";
+	cin >> input; // Accept user input
+	return input;
+}
+
+
 int drawCard() { //draws a card for player
 	srand((unsigned int)time(0)); //uses random number generator seed
 	cardGen = rand() % 52 + 1; //generates a random number between 1-52 (decides where in the deck the card might be)
-	cout << "Drawing players card..." << "\n";
 	Sleep(1000);
 	if (cardGen > 35) //if the card is in the last 16 in the deck, it should be a 10
 	{
@@ -63,7 +74,6 @@ int drawCard() { //draws a card for player
 int dealerNewCard() { //same as above, really should've used a different lazier way to do this
 	srand((unsigned int)time(0));
 	cardGen = rand() % 52 + 1;
-	cout << "Drawing dealers card..." << "\n";
 	Sleep(1000);
 	if (cardGen > 35)
 	{
@@ -105,7 +115,7 @@ int checkValue() { //checks the player total
 
 int dealerCheckValue() { //same as above (really should've made this more optimal)
 	dealer = card + dealer;
-	cout << "Dealer total value: " << dealer << "\n";
+	cout << "Dealer total value: " << dealer << "\n" << "\n";
 	if (dealer > 21) {
 		if (dealerAce > 0) {
 			dealer = dealer - 10;
@@ -121,78 +131,72 @@ int dealerCheckValue() { //same as above (really should've made this more optima
 
 
 
-void endGame() { //end of current game calculations
-	if (playerBlackjack == false && dealerBlackjack == false) //checks for blackjack advantages firstly
-	{
-		while (dealer < 17) //dealer keeps drawing till 17
-		{
-			dealerNewCard();
-			dealerCheckValue();
-		}
-		if (player > dealer && player <= 21) //checks if player has higher total
-		{
-			cout << "You win!" << "\n";
-			money = bet + money;
-		}
-		if (player > 21)
-		{
-			cout << "You lose!" << "\n"; //checks if player went bust
-			money = money - bet;
-		}
-		if (player < dealer && dealer <= 21) { //checks if player has lower total
-			cout << "You lose!" << "\n";
-			money = money - bet;
-		}
-		if (player < dealer && player < 21 && dealer > 21) //checks if dealer has gone bust
-		{
-			cout << "You win!" << "\n";
-			money = bet + money;
-		}
-		if (player == dealer && player <= 21) { //checks if draw
-			cout << "Push!" << "\n";
-		}
-		if (money <= 0) //checks balance incase bankrupt
-		{
-			cout << "You went bankrupt!" << "\n";
-			enabled = false;
-			inPlay = false;
-		}
+void endGame() {
+	cout << "\n--- End of Hand ---\n";
+	cout << "Player total: " << player << "\n";
+	cout << "Dealer total: " << dealer << "\n";
+
+	// Dealer finishes their turn if not already done
+	while (dealer < 17 && dealer > 0) {
+		dealerNewCard();
+		dealerCheckValue();
 	}
-	if (playerBlackjack == true && dealerBlackjack == false) //if player has blackjack pay
-	{
-		cout << "Blackjack!" << "\n";
-		money = (bet * 2) + money;
-		playerBlackjack = false;
+
+	// Check outcomes
+	if (playerBlackjack && dealerBlackjack) {
+		cout << "Both have blackjack! Push.\n";
 	}
-	if (playerBlackjack == false && dealerBlackjack == true) //if dealer has blackjack, player may have 21 but still loses if it wasn't a blackjack
-	{
-		cout << "Dealer has blackjack" << "\n";
-		money = money - bet;
-		dealerBlackjack = false;
+	else if (playerBlackjack) {
+		cout << "Blackjack! You win 2x your bet.\n";
+		money += (bet * 2);
 	}
-	if (playerBlackjack == true && dealerBlackjack == true) //if both have blackjack, push
-	{
-		cout << "Push!" << "\n";
-		dealerBlackjack = false;
-		playerBlackjack = false;
+	else if (dealerBlackjack) {
+		cout << "Dealer has blackjack. You lose your bet.\n";
+		money -= bet;
 	}
-	if (money > baltop) //checks top balance
-	{
+	else if (player > 21) {
+		cout << "You busted. Dealer wins.\n";
+		money -= bet;
+	}
+	else if (dealer > 21) {
+		cout << "Dealer busted. You win!\n";
+		money += bet;
+	}
+	else if (player > dealer) {
+		cout << "You win!\n";
+		money += bet;
+	}
+	else if (player < dealer) {
+		cout << "Dealer wins.\n";
+		money -= bet;
+	}
+	else {
+		cout << "Push! It's a tie.\n";
+	}
+
+	// Update statistics
+	if (money > baltop) {
 		baltop = money;
+		baltopGames = games;
 	}
-	cout << "Type anything to continue" << "\n"; //makes player input to continue to the next round
-	cin >> nexti;
-	wagered = bet + wagered;
+	wagered += bet;
+
+	// Reset game state
 	player = 0;
 	dealer = 0;
+	playerAce = 0;
+	dealerAce = 0;
+	playerBlackjack = false;
+	dealerBlackjack = false;
 	inPlay = true;
+	Sleep(3000);
 	system("CLS");
 }
 
 void welcomeMessage() { //starts welcome message
 	cout << "Welcome to blackjack" << "\n";
 	cout << "Type 1 to play, Type 2 for rules, Type anything else to terminate." << '\n';
-	cin >> option;
+		cin >> option;
 	system("CLS");
 }
 
@@ -201,73 +205,102 @@ void rules() {
 	cout << "Rules: " << '\n' << '\n';
 	cout << "You must try to get the highest number up to 21 against the dealer, if you surpass 21 you will go bust." << '\n' << "Dealer always stands on 17 or above." << "\n";
 	cout << "If you double your bet, one card can only be drawn and you must stand past that point." << "\n" << "Blackjack pays double, aces are equal to 11 or 1 depending on if you go over 21." << '\n';
+	cout << "Playing with an infinite deck shoe, card counting won't be possible." << '\n';
 }
 
+int createBet() {
+	cout << "Current balance: $" << money << "\n";
+	cout << "Please input bet" << "\n" << "$";
+	cin >> bet;
+	system("CLS");
+	while (bet > money) {
+		cout << "Error - You do not have enough funds for that!" << "\n";
+		cout << "Please input bet" << "\n";
+		cin >> bet;
+	}
+	return bet;
+}
 
+void finalStatistics() {
+	cout << "Final statistics: " << "\n" << "Wagered: " << wagered << "\n" << "Games: " << games << '\n' << "Top balance: " << baltop << "Top balance game: " << baltopGames;
+}
 
+bool isInPlay() {
+	if (input == "d") { // Double down
+		if ((bet * 2) <= money) {
+			bet = bet * 2; // Double the bet
+			drawCard();
+			checkValue(); // Check if the player busts
+			inPlay = false; // End the turn
+		}
+		else {
+			cout << "Not enough funds for double down.\n";
+		}
+	}
+	if (input == "n") { // Stand
+		inPlay = false; // End player's turn
+	}
+	if (player > 21) { // Player busts
+		inPlay = false;
+	}
+	return inPlay;
+}
+
+bool isDraw() {
+	if (input == "y")
+	{
+		draw = true;
+	}
+	if (input == "n")
+	{
+		draw = false;
+	}
+	if (input == "d") {
+		draw = true;
+	}
+	return draw;
+}
+
+int i = 0;
 int main() {
 	welcomeMessage();
 	if (option == 2) {
 		rules();
 	}
 	if (option == 1) {
-		while (enabled = true && money > 0)
-		{
-			cout << "Current balance: " << money << "\n";
-			cout << "Please input bet" << "\n";
-			cin >> bet;
-			system("CLS");
-			while (bet > money) {
-				cout << "Error - You do not have enough funds for that!" << "\n";
-				cout << "Please input bet" << "\n";
-				cin >> bet;
+			while (i < 1000 && money > 0)
+			{
+				createBet();
+				drawCard();
+				checkValue();
+				drawCard();
+				checkValue();
+				dealerNewCard();
+				dealerCheckValue();
+				while (inPlay) {
+					userInput();
+					isDraw();
+
+					if (input == "d") { // Double down
+						isInPlay();
+					}
+					else if (input == "y") { // Draw card
+						drawCard();
+						checkValue();
+						isInPlay();
+					}
+					else if (input == "n") { // Stand
+						isInPlay(); // Ends player turn, proceeds to dealer logic in endGame
+					}
+
+					Sleep(1000);
+					system("CLS");
+				}
+				games++;
+				endGame();
+				i++;
 			}
-			cout << "Dealing cards" << "\n";
-			drawCard();
-			checkValue();
-			drawCard();
-			checkValue();
-			dealerNewCard();
-			dealerCheckValue();
-			while (inPlay == true) {
-				system("CLS");
-				cout << "\n" << "Current value - " << player << "\n" << "Dealer upcard - " << dealer << "\n" << "Do you wish to draw? y/n or d for double:" << "\n" << flush;
-				cin >> input;
-				system("CLS");
-				if (input == "y")
-				{
-					draw = true;
-				}
-				if (input == "n")
-				{
-					draw = false;
-				}
-				if (input == "d")
-				{
-					draw = true;
-					bet = bet * 2;
-					inPlay = false;
-				}
-				if (draw == true)
-				{
-					drawCard();
-					checkValue();
-				}
-				if (draw == false)
-				{
-					inPlay = false;
-				}
-				if (player > 21)
-				{
-					inPlay = false;
-				}
-				Sleep(1000);
-				system("CLS");
-			}
-			games++;
-			endGame();
+			finalStatistics();
+			return 0;
 		}
-		cout << "Final statistics: " << "\n" << "Wagered: " << wagered << "\n" << "Games: " << games << '\n' << "Top balance: " << baltop;
-		return 0;
 	}
-}
